@@ -81,7 +81,8 @@ import org.jboss.as.console.client.shared.subsys.jca.model.StandaloneDriverStrat
 import org.jboss.as.console.client.shared.subsys.logging.LoggingPresenter;
 import org.jboss.as.console.client.shared.subsys.messaging.MessagingPresenter;
 import org.jboss.as.console.client.shared.subsys.naming.JndiPresenter;
-import org.jboss.as.console.client.shared.subsys.osgi.OSGiPresenter;
+import org.jboss.as.console.client.shared.subsys.osgi.config.OSGiConfigurationPresenter;
+import org.jboss.as.console.client.shared.subsys.osgi.runtime.OSGiRuntimePresenter;
 import org.jboss.as.console.client.shared.subsys.deploymentscanner.ScannerPresenter;
 import org.jboss.as.console.client.shared.subsys.threads.BoundedQueueThreadPoolPresenter;
 import org.jboss.as.console.client.shared.subsys.web.WebPresenter;
@@ -190,12 +191,13 @@ public interface CoreUI extends Ginjector {
     AsyncProvider<MessagingPresenter> getMessagingPresenter();
     AsyncProvider<LoggingPresenter> getLoggingPresenter();
     AsyncProvider<ScannerPresenter> getScannerPresenter();
-    AsyncProvider<OSGiPresenter> getOSGiPresenter();
+    AsyncProvider<OSGiConfigurationPresenter> getOSGiConfigurationPresenter();
+    AsyncProvider<OSGiRuntimePresenter> getOSGiRuntimePresenter();
     AsyncProvider<CacheContainerPresenter> getCacheContainerPresenter();
     AsyncProvider<SocketBindingPresenter> getSocketBindingPresenter();
 
     AsyncProvider<BoundedQueueThreadPoolPresenter> getBoundedQueueThreadPoolPresenter();
-    
+
     AsyncProvider<WebPresenter> getWebPresenter();
 
     AsyncProvider<InterfacePresenter> getInterfacePresenter();
