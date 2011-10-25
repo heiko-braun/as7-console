@@ -18,7 +18,6 @@
  */
 package org.jboss.as.console.client.shared.viewframework;
 
-import org.jboss.dmr.client.Property;
 import static org.jboss.dmr.client.ModelDescriptionConstants.ADD;
 import static org.jboss.dmr.client.ModelDescriptionConstants.INCLUDE_RUNTIME;
 import static org.jboss.dmr.client.ModelDescriptionConstants.OP;
@@ -62,7 +61,7 @@ public class EntityToDmrBridgeImpl<T extends NamedEntity> implements EntityToDmr
     protected List<T> entityList = Collections.emptyList();
     protected String nameOfLastEdited;
 
-    protected Comparator entityComparator = new Comparator<NamedEntity>() {
+    protected Comparator<NamedEntity> entityComparator = new Comparator<NamedEntity>() {
         @Override
         public int compare(NamedEntity entity1, NamedEntity entity2) {
             return entity1.getName().toLowerCase().compareTo(entity2.getName().toLowerCase());
@@ -134,9 +133,14 @@ public class EntityToDmrBridgeImpl<T extends NamedEntity> implements EntityToDmr
         String name = entity.getName();
         ModelNode operation = address.asResource(name);
         operation.get(OP).set(ADD);
-        ModelNode attributes = this.entityAdapter.fromEntity(form.getUpdatedEntity());
-        for (Property prop : attributes.asPropertyList()) {
-            operation.get(prop.getName()).set(prop.getValue());
+        Map<String, Object> changedValues = form.getChangedValues();
+
+        for (PropertyBinding attrib : formMetaData.getBaseAttributes()) {
+            if (changedValues.containsKey(attrib.getJavaName())) {
+                operation.get(attrib.getDetypedName()).set(changedValues.get(attrib.getJavaName()).toString());
+            } else if (attrib.getDefaultValue() != null) {
+                operation.get(attrib.getDetypedName()).set(attrib.getDefaultValue().toString());
+            }
         }
         execute(operation, name, "Success: Added " + name);
     }
