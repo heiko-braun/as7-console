@@ -34,7 +34,9 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.gwt.junit.client.GWTTestCase;
+import com.google.gwt.user.cellview.client.CellTable;
 import com.google.gwt.user.client.rpc.AsyncCallback;
+import com.google.gwt.user.client.ui.Widget;
 
 import junit.framework.Assert;
 
@@ -46,9 +48,15 @@ import org.jboss.as.console.client.shared.dispatch.impl.DMRAction;
 import org.jboss.as.console.client.widgets.forms.AddressBinding;
 import org.jboss.as.console.client.widgets.forms.BeanMetaData;
 import org.jboss.as.console.client.widgets.forms.EntityFactory;
+import org.jboss.as.console.client.widgets.forms.Getter;
 import org.jboss.as.console.client.widgets.forms.Mutator;
 import org.jboss.as.console.client.widgets.forms.PropertyBinding;
 import org.jboss.as.console.client.widgets.forms.PropertyMetaData;
+import org.jboss.as.console.client.widgets.forms.Setter;
+import org.jboss.ballroom.client.widgets.forms.EditListener;
+import org.jboss.ballroom.client.widgets.forms.FormAdapter;
+import org.jboss.ballroom.client.widgets.forms.FormValidation;
+import org.jboss.dmr.client.ModelDescriptionConstants;
 import org.jboss.dmr.client.ModelNode;
 import org.junit.Test;
 
@@ -119,6 +127,40 @@ public class EntityToDmrBridgeImplTest extends GWTTestCase {
         Assert.assertEquals(true, op.get(RECURSIVE).asBoolean());
     }
 
+    @Test
+    public void testOnAdd() {
+        TestPropertyMetaData pm = new TestPropertyMetaData();
+        List<PropertyBinding> properties = new ArrayList<PropertyBinding>();
+        properties.add(new PropertyBinding("name", "name", String.class.getName(), null, pm, true, false, "", null, true, "TEXT", "TEXT", "", null, 1));
+        properties.add(new PropertyBinding("myvalue", "myvalue", String.class.getName(), null, pm, false, false, "mydefault", null, true, "TEXT", "TEXT", "", null, 10));
+        AddressBinding address = new AddressBinding();
+        address.add("{resource=blah}", "foo");
+        BeanMetaData bm = new BeanMetaData(MyNamedEntity.class, address, properties);
+        pm.beanMetaData.put(MyNamedEntity.class, bm);
+
+        final List<Object> result = new ArrayList<Object>();
+        EntityToDmrBridgeImpl<MyNamedEntity> bridge = new EntityToDmrBridgeImpl<MyNamedEntity>(pm, MyNamedEntity.class, null, null) {
+            @Override
+            protected void execute(ModelNode operation, String nameEditedOrAdded, String successMessage) {
+                result.add(operation);
+                result.add(nameEditedOrAdded);
+            }
+        };
+
+        MyNamedEntity updatedEntity = new MyNamedEntityImpl();
+        MyFormAdapter form = new MyFormAdapter(updatedEntity);
+        form.changedValues.put("name", "myval");
+
+        Assert.assertEquals("Precondition", 0, result.size());
+        bridge.onAdd(form);
+        Assert.assertEquals(2, result.size());
+        ModelNode operation = (ModelNode) result.get(0);
+        Assert.assertEquals("myval", operation.get("name").asString());
+        Assert.assertEquals("mydefault", operation.get("myvalue").asString());
+        Assert.assertEquals(ModelDescriptionConstants.ADD, operation.get(ModelDescriptionConstants.OP).asString());
+        Assert.assertEquals("myentity", result.get(1));
+    }
+
     private static class TestDispatchAsync implements DispatchAsync {
         private Object lastExecuteAction;
 
@@ -149,7 +191,21 @@ public class EntityToDmrBridgeImplTest extends GWTTestCase {
 
         @Override
         public Mutator<?> getMutator(Class<?> type) {
-            return null;
+            Mutator<MyNamedEntity> mutator = new Mutator<MyNamedEntity>();
+            mutator.register("myvalue", new Getter<MyNamedEntity>() {
+                @Override
+                public Object invoke(MyNamedEntity entity) {
+                    return entity.getMyvalue();
+                }
+            });
+            mutator.register("myvalue", new Setter<MyNamedEntity>() {
+                @Override
+                public void invoke(MyNamedEntity entity, Object value) {
+                    entity.setMyvalue((String) value);
+                }
+            });
+
+            return mutator;
         }
 
         @Override
@@ -159,5 +215,97 @@ public class EntityToDmrBridgeImplTest extends GWTTestCase {
     }
 
     private interface MyNamedEntity extends NamedEntity {
+        String getMyvalue();
+        void setMyvalue(String value);
+    }
+
+    private static class MyNamedEntityImpl implements MyNamedEntity {
+        private String value;
+
+        @Override
+        public String getName() {
+            return "myentity";
+        }
+
+        @Override
+        public void setName(String name) { }
+
+        @Override
+        public String getMyvalue() {
+            return value;
+        }
+
+        @Override
+        public void setMyvalue(String value) {
+            this.value = value;
+        }
+    }
+
+    private static class MyFormAdapter implements FormAdapter<MyNamedEntity> {
+        private final MyNamedEntity updatedEntity;
+        private Map<String, Object> changedValues = new HashMap<String, Object>();
+
+        private MyFormAdapter(MyNamedEntity updatedEntity) {
+            this.updatedEntity = updatedEntity;
+        }
+
+        @Override
+        public Widget asWidget() {
+            return null;
+        }
+
+        @Override
+        public void bind(CellTable<MyNamedEntity> instanceTable) {
+        }
+
+        @Override
+        public void cancel() {
+        }
+
+        @Override
+        public void edit(MyNamedEntity bean) {
+        }
+
+        @Override
+        public void addEditListener(EditListener listener) {
+        }
+
+        @Override
+        public void removeEditListener(EditListener listener) {
+        }
+
+        @Override
+        public Map<String, Object> getChangedValues() {
+            return changedValues;
+        }
+
+        @Override
+        public Class<?> getConversionType() {
+            return null;
+        }
+
+        @Override
+        public MyNamedEntity getEditedEntity() {
+            return null;
+        }
+
+        @Override
+        public MyNamedEntity getUpdatedEntity() {
+            return updatedEntity;
+        }
+
+        @Override
+        public List<String> getFormItemNames() {
+            return null;
+        }
+
+        @Override
+        public void setEnabled(boolean b) {
+        }
+
+        @Override
+        public FormValidation validate() {
+            return null;
+        }
     }
 }
