@@ -93,15 +93,17 @@ public class ServerConfigView extends SuspendableViewImpl implements ServerConfi
 
         final ToolStrip toolStrip = new ToolStrip();
 
-        toolStrip.addToolButtonRight(new ToolButton(Console.CONSTANTS.common_label_add(), new ClickHandler(){
+        ToolButton addBtn = new ToolButton(Console.CONSTANTS.common_label_add(), new ClickHandler(){
             @Override
             public void onClick(ClickEvent event) {
                 presenter.launchNewConfigDialoge();
             }
-        }));
+        });
+        addBtn.ensureDebugId(Console.CONSTANTS.debug_label_add_serverConfigView());
+        toolStrip.addToolButtonRight(addBtn);
 
-        ToolButton delete = new ToolButton(Console.CONSTANTS.common_label_delete());
-        delete.addClickHandler(new ClickHandler(){
+        ToolButton deleteBtn = new ToolButton(Console.CONSTANTS.common_label_delete());
+        deleteBtn.addClickHandler(new ClickHandler(){
             @Override
             public void onClick(ClickEvent clickEvent) {
 
@@ -120,7 +122,8 @@ public class ServerConfigView extends SuspendableViewImpl implements ServerConfi
             }
         });
 
-        toolStrip.addToolButtonRight(delete);
+        deleteBtn.ensureDebugId(Console.CONSTANTS.debug_label_delete_serverConfigView());
+        toolStrip.addToolButtonRight(deleteBtn);
 
         layout.add(toolStrip);
 
@@ -255,14 +258,28 @@ public class ServerConfigView extends SuspendableViewImpl implements ServerConfi
     }
 
     @Override
-    public void setConfigurations(String selectedHost, List<Server> servers) {
+    public void setConfigurations(String selectedHost, List<Server> servers, String selectedConfigName) {
         serverConfigProvider.setList(servers);
 
         if(!servers.isEmpty())
         {
-            getSelectionModel().setSelected(servers.get(0), true);
+        	if(selectedConfigName == null || selectedConfigName.equals("")) {
+        		getSelectionModel().setSelected(servers.get(0), true);
+        	}
+        	else {
+        		getSelectionModel().setSelected(findSelectedServer(servers, selectedConfigName), true);
+        	}
         }
 
     }
+    
+    private Server findSelectedServer(List<Server> servers,String name){
+    	for (Server server : servers) {
+			if(server.getName().equals(name)) {
+				return server;
+			}
+		}
+    	return servers.get(0);	
+    } 
 
 }

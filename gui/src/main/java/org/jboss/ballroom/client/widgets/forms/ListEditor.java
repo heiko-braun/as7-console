@@ -100,6 +100,7 @@ public class ListEditor<T extends Comparable> {
                     listManager.launchNewItemDialoge();
             }
         });
+        addItem.ensureDebugId(Console.CONSTANTS.debug_label_add_listEditor());
         itemTools.addToolButtonRight(addItem);
 
         panel.add(itemTools);
